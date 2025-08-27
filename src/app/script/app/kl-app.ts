@@ -220,7 +220,7 @@ export class KlApp {
         this.toolspace.classList.toggle('kl-toolspace--right', this.uiLayout === 'right');
         if (this.uiLayout === 'left') {
             BB.css(this.toolspace, {
-                left: '0',
+                left: this.leftToolbarWidth + 'px',
                 right: '',
             });
         } else {
@@ -375,6 +375,7 @@ export class KlApp {
                 currentBrushUi.setColor(color);
                 this.mobileColorUi.setColor(color);
                 currentColor = BB.copyObj(color);
+                try { updateToolbarColors(); } catch {}
             },
             onSetSize: (size) => {
                 currentBrushUi.setSize(size);
@@ -1274,6 +1275,7 @@ export class KlApp {
             this.mobileColorUi.setColor(p_color);
             this.klColorSlider.setIsEyedropping(false);
             this.mobileColorUi.setIsEyedropping(false);
+            try { updateToolbarColors(); } catch {}
         };
 
         this.klColorSlider = new KL.KlColorSlider({
@@ -1418,8 +1420,15 @@ export class KlApp {
         const onActivateTool = (toolId: TKlAppToolId, openTabId?: string) => {
             applyUncommitted();
             this.easel.setTool(toolId as any);
+
+            // keep legacy tool row state in sync for features depending on it (e.g., updateMainTabVisibility)
+            const toolTypeList = ['brush', 'hand', 'paintBucket', 'gradient', 'text', 'shape', 'select'] as const;
+            if ((toolTypeList as readonly string[]).includes(toolId as string)) {
+                this.toolspaceToolRow.setActive(toolId as any);
+            }
+
             const tab = openTabId ?? (toolId as any as string);
-            if (mainTabRow) {
+            if (mainTabRow && (toolTypeList as readonly string[]).includes(tab)) {
                 mainTabRow.open(tab);
             }
             updateMainTabVisibility();
@@ -1447,7 +1456,7 @@ export class KlApp {
         });
         const btnEraser = createBtn({
             image: brushEraserImg,
-            title: LANG('tool-eraser') || 'Eraser',
+            title: 'Eraser',
             onClick: () => {
                 onActivateTool('brush', 'brush');
                 setActiveBtn(btnEraser);
@@ -1498,8 +1507,12 @@ export class KlApp {
             image: toolZoomInImg,
             title: LANG('tool-zoom'),
             onClick: () => {
-                onActivateTool('zoom');
+                // Zoom tool doesn't have a tab; just activate the tool without changing tabs
+                applyUncommitted();
+                this.easel.setTool('zoom');
                 setActiveBtn(btnZoom);
+                this.klColorSlider.setIsEyedropping(false);
+                this.mobileColorUi.setIsEyedropping(false);
             },
         });
 
