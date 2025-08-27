@@ -80,6 +80,10 @@ import { runBrowserStorageBanner } from '../klecks/ui/components/browser-storage
 import { requestPersistentStorage } from '../klecks/storage/request-persistent-storage';
 import { CrossTabChannel } from '../bb/base/cross-tab-channel';
 import { MobileColorUi } from '../klecks/ui/mobile/mobile-color-ui';
+import toolPickerImg from '/src/app/img/ui/tool-picker.svg';
+import brushEraserImg from '/src/app/img/ui/brush-eraser.svg';
+import toolZoomInImg from '/src/app/img/ui/tool-zoom-in.svg';
+import swapYImg from '/src/app/img/ui/swap-y.svg';
 
 importFilters();
 
@@ -136,6 +140,8 @@ export class KlApp {
     private readonly toolspace: HTMLElement;
     private readonly toolspaceInner: HTMLElement;
     private readonly toolWidth: number = 271;
+    private readonly leftToolbarWidth: number = 56;
+    private readonly leftToolbar: HTMLElement;
     private readonly bottomBar: HTMLElement | undefined;
     private readonly layersUi: LayersUi;
     private readonly toolspaceScroller: ToolspaceScroller;
@@ -162,42 +168,36 @@ export class KlApp {
         if (this.uiWidth < this.collapseThreshold) {
             this.mobileUi.setIsVisible(true);
             if (this.mobileUi.getToolspaceIsOpen()) {
-                if (this.uiLayout === 'left') {
-                    BB.css(this.easel.getElement(), {
-                        left: '271px',
-                    });
-                } else {
-                    BB.css(this.easel.getElement(), {
-                        left: '0',
-                    });
-                }
+                const leftOffset = (this.uiLayout === 'left' ? this.toolWidth : 0) + this.leftToolbarWidth;
+                BB.css(this.easel.getElement(), {
+                    left: leftOffset + 'px',
+                });
                 this.toolspace.style.display = 'block';
-                this.easel.setSize(Math.max(0, this.uiWidth - this.toolWidth), this.uiHeight);
+                this.easel.setSize(
+                    Math.max(0, this.uiWidth - this.toolWidth - this.leftToolbarWidth),
+                    this.uiHeight,
+                );
                 this.statusOverlay.setWide(false);
             } else {
-                if (this.uiLayout === 'left') {
-                    BB.css(this.easel.getElement(), {
-                        left: '0',
-                    });
-                } else {
-                    BB.css(this.easel.getElement(), {
-                        left: '0',
-                    });
-                }
+                BB.css(this.easel.getElement(), {
+                    left: this.leftToolbarWidth + 'px',
+                });
                 this.toolspace.style.display = 'none';
-                this.easel.setSize(Math.max(0, this.uiWidth), this.uiHeight);
+                this.easel.setSize(Math.max(0, this.uiWidth - this.leftToolbarWidth), this.uiHeight);
                 this.statusOverlay.setWide(true);
             }
         } else {
             this.mobileColorUi.closeColorPicker();
             this.mobileUi.setIsVisible(false);
-            if (this.uiLayout === 'left') {
-                BB.css(this.easel.getElement(), {
-                    left: '271px',
-                });
-            }
+            const leftOffset = (this.uiLayout === 'left' ? this.toolWidth : 0) + this.leftToolbarWidth;
+            BB.css(this.easel.getElement(), {
+                left: leftOffset + 'px',
+            });
             this.toolspace.style.display = 'block';
-            this.easel.setSize(Math.max(0, this.uiWidth - this.toolWidth), this.uiHeight);
+            this.easel.setSize(
+                Math.max(0, this.uiWidth - this.toolWidth - this.leftToolbarWidth),
+                this.uiHeight,
+            );
             this.statusOverlay.setWide(false);
         }
         this.mobileUi.update();
@@ -220,21 +220,17 @@ export class KlApp {
         this.toolspace.classList.toggle('kl-toolspace--right', this.uiLayout === 'right');
         if (this.uiLayout === 'left') {
             BB.css(this.toolspace, {
-                left: '0',
+                left: this.leftToolbarWidth + 'px',
                 right: '',
-            });
-            BB.css(this.easel.getElement(), {
-                left: '271px',
             });
         } else {
             BB.css(this.toolspace, {
                 left: '',
                 right: '0',
             });
-            BB.css(this.easel.getElement(), {
-                left: '0',
-            });
         }
+        // easel position will be handled in updateCollapse to account for left toolbar
+
         this.statusOverlay.setUiState(this.uiLayout);
         this.layerPreview.setUiState(this.uiLayout);
         this.layersUi.setUiState(this.uiLayout);
@@ -379,6 +375,7 @@ export class KlApp {
                 currentBrushUi.setColor(color);
                 this.mobileColorUi.setColor(color);
                 currentColor = BB.copyObj(color);
+                try { updateToolbarColors(); } catch {}
             },
             onSetSize: (size) => {
                 currentBrushUi.setSize(size);
@@ -630,7 +627,7 @@ export class KlApp {
 
         let isFirstTransform = true;
         this.easel = new Easel({
-            width: Math.max(0, this.uiWidth - this.toolWidth),
+            width: Math.max(0, this.uiWidth - this.toolWidth - this.leftToolbarWidth),
             height: this.uiHeight,
             project: {
                 width: this.klCanvas.getWidth(),
@@ -766,7 +763,7 @@ export class KlApp {
         });
         BB.css(this.easel.getElement(), {
             position: 'absolute',
-            left: '0',
+            left: this.leftToolbarWidth + 'px',
             top: '0',
         });
         this.easelProjectUpdater = new EaselProjectUpdater({
@@ -1268,6 +1265,8 @@ export class KlApp {
         });
         this.toolspaceToolRow.setIsSmall(this.uiHeight < 540);
         this.toolspaceInner.append(this.toolspaceToolRow.getElement());
+        // Hide original horizontal tool row in favor of the new left toolbar
+        this.toolspaceToolRow.getElement().style.display = 'none';
 
         const setBrushColor = (p_color: TRgb) => {
             currentColor = p_color;
@@ -1276,6 +1275,7 @@ export class KlApp {
             this.mobileColorUi.setColor(p_color);
             this.klColorSlider.setIsEyedropping(false);
             this.mobileColorUi.setIsEyedropping(false);
+            try { updateToolbarColors(); } catch {}
         };
 
         this.klColorSlider = new KL.KlColorSlider({
@@ -1394,6 +1394,170 @@ export class KlApp {
             brushTabRow.getElement(),
             ...Object.entries(KL.BRUSHES_UI).map(([b]) => brushUiMap[b].getElement()),
         ]);
+
+        // --- Left vertical toolbar ---
+        this.leftToolbar = BB.el({
+            className: 'kl-left-toolbar',
+        });
+
+        const toolbarButtons: HTMLElement[] = [];
+        let activeBtn: HTMLElement | undefined;
+        const setActiveBtn = (btn: HTMLElement) => {
+            if (activeBtn) {
+                activeBtn.classList.remove('kl-left-toolbar__btn--active');
+            }
+            activeBtn = btn;
+            activeBtn.classList.add('kl-left-toolbar__btn--active');
+        };
+        const createBtn = (p: { image: string; title: string; onClick: () => void }): HTMLElement => {
+            const btn = BB.el({ className: 'kl-left-toolbar__btn', title: p.title, onClick: p.onClick });
+            const icon = BB.el({ className: 'kl-left-toolbar__btn-icon', css: { backgroundImage: `url('${p.image}')` } });
+            btn.append(icon);
+            toolbarButtons.push(btn);
+            return btn;
+        };
+
+        const onActivateTool = (toolId: TKlAppToolId, openTabId?: string) => {
+            applyUncommitted();
+            this.easel.setTool(toolId as any);
+
+            // keep legacy tool row state in sync for features depending on it (e.g., updateMainTabVisibility)
+            const toolTypeList = ['brush', 'hand', 'paintBucket', 'gradient', 'text', 'shape', 'select'] as const;
+            if ((toolTypeList as readonly string[]).includes(toolId as string)) {
+                this.toolspaceToolRow.setActive(toolId as any);
+            }
+
+            const tab = openTabId ?? (toolId as any as string);
+            if (mainTabRow && (toolTypeList as readonly string[]).includes(tab)) {
+                mainTabRow.open(tab);
+            }
+            updateMainTabVisibility();
+            this.klColorSlider.setIsEyedropping(false);
+            this.mobileColorUi.setIsEyedropping(false);
+        };
+
+        const btnSelect = createBtn({
+            image: toolSelectImg,
+            title: LANG('tool-select'),
+            onClick: () => {
+                onActivateTool('select');
+                setActiveBtn(btnSelect);
+            },
+        });
+        const btnBrush = createBtn({
+            image: toolPaintImg,
+            title: LANG('tool-brush'),
+            onClick: () => {
+                onActivateTool('brush', 'brush');
+                setActiveBtn(btnBrush);
+                // keep current brush selection
+                brushTabRow.open(currentBrushId);
+            },
+        });
+        const btnEraser = createBtn({
+            image: brushEraserImg,
+            title: 'Eraser',
+            onClick: () => {
+                onActivateTool('brush', 'brush');
+                setActiveBtn(btnEraser);
+                brushTabRow.open('eraserBrush');
+            },
+        });
+        const btnShape = createBtn({
+            image: toolShapeImg,
+            title: LANG('tool-shape'),
+            onClick: () => {
+                onActivateTool('shape');
+                setActiveBtn(btnShape);
+            },
+        });
+        const btnFill = createBtn({
+            image: toolFillImg,
+            title: LANG('tool-paint-bucket'),
+            onClick: () => {
+                onActivateTool('paintBucket');
+                setActiveBtn(btnFill);
+            },
+        });
+        const btnEyedropper = createBtn({
+            image: toolPickerImg,
+            title: LANG('eyedropper'),
+            onClick: () => {
+                this.easel.setTool('eyedropper');
+                setActiveBtn(btnEyedropper);
+            },
+        });
+        const btnText = createBtn({
+            image: toolTextImg,
+            title: LANG('tool-text'),
+            onClick: () => {
+                onActivateTool('text');
+                setActiveBtn(btnText);
+            },
+        });
+        const btnHand = createBtn({
+            image: toolHandImg,
+            title: LANG('tool-hand'),
+            onClick: () => {
+                onActivateTool('hand');
+                setActiveBtn(btnHand);
+            },
+        });
+        const btnZoom = createBtn({
+            image: toolZoomInImg,
+            title: LANG('tool-zoom'),
+            onClick: () => {
+                // Zoom tool doesn't have a tab; just activate the tool without changing tabs
+                applyUncommitted();
+                this.easel.setTool('zoom');
+                setActiveBtn(btnZoom);
+                this.klColorSlider.setIsEyedropping(false);
+                this.mobileColorUi.setIsEyedropping(false);
+            },
+        });
+
+        // Append buttons in a structured order
+        BB.append(this.leftToolbar, [
+            btnSelect,
+            btnBrush,
+            btnEraser,
+            btnShape,
+            btnFill,
+            btnEyedropper,
+            btnText,
+            btnHand,
+            btnZoom,
+            BB.el({ className: 'kl-left-toolbar__spacer' }),
+        ]);
+
+        // Color preview & swap at bottom
+        const colorsWrap = BB.el({ className: 'kl-left-toolbar__colors' });
+        const primaryColorEl = BB.el({ className: 'kl-left-toolbar__color-primary' });
+        const secondaryColorEl = BB.el({ className: 'kl-left-toolbar__color-secondary' });
+        const swapBtn = BB.el({ className: 'kl-left-toolbar__swap', title: LANG('secondary-color') + ' [X]' });
+        const swapIcon = BB.el({ className: 'kl-left-toolbar__swap-icon', css: { backgroundImage: `url('${swapYImg}')` } });
+        swapBtn.append(swapIcon);
+        colorsWrap.append(secondaryColorEl, primaryColorEl, swapBtn);
+        this.leftToolbar.append(colorsWrap);
+
+        const updateToolbarColors = () => {
+            const p = this.klColorSlider.getColor();
+            const s = this.klColorSlider.getSecondaryRGB();
+            primaryColorEl.style.backgroundColor = `rgb(${p.r},${p.g},${p.b})`;
+            secondaryColorEl.style.backgroundColor = `rgb(${s.r},${s.g},${s.b})`;
+        };
+        updateToolbarColors();
+        swapBtn.onclick = (e) => {
+            e.preventDefault();
+            this.klColorSlider.swapColors();
+            updateToolbarColors();
+        };
+
+        // initial active state
+        setActiveBtn(btnBrush);
+
+        // add toolbar to DOM
+        this.rootEl.append(this.leftToolbar);
 
         const handUi = new KL.HandUi({
             scale: this.easel.getTransform().scale,

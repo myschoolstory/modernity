@@ -70,7 +70,7 @@ html {
 .g-root {
     /* some browsers like to overwrite body */
     font-size: 16px;
-    font-family: system-ui, sans-serif;
+    font-family: Inter, system-ui, sans-serif;
 }
 
 a:link,
@@ -108,6 +108,107 @@ a:not([href]):hover {
 
 .kl-toolspace {
     background-color: var(--ui-bg-color);
+}
+
+/* Illustrator-style left vertical toolbar */
+.kl-left-toolbar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    background: var(--ui-bg-dark, #383838);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 6px;
+    gap: 6px;
+    z-index: 5;
+}
+
+.kl-left-toolbar__btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: #2f2f2f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 120ms ease-in-out, box-shadow 120ms ease-in-out;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.kl-left-toolbar__btn:hover {
+    background: #3a3a3a;
+}
+
+.kl-left-toolbar__btn--active {
+    background: #4a4a4a;
+    box-shadow: inset 0 0 0 1px var(--active-highlight-color);
+}
+
+.kl-left-toolbar__btn-icon {
+    width: 22px;
+    height: 22px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 20px 20px;
+    filter: invert(1) hue-rotate(180deg);
+}
+
+.kl-left-toolbar__spacer {
+    flex: 1 1 auto;
+}
+
+.kl-left-toolbar__colors {
+    position: relative;
+    width: 40px;
+    height: 40px;
+}
+
+.kl-left-toolbar__color-primary,
+.kl-left-toolbar__color-secondary {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.7);
+}
+
+.kl-left-toolbar__color-primary {
+    left: 8px;
+    top: 8px;
+    z-index: 2;
+}
+
+.kl-left-toolbar__color-secondary {
+    left: 0px;
+    top: 0px;
+}
+
+.kl-left-toolbar__swap {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: #2f2f2f;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.kl-left-toolbar__swap-icon {
+    width: 14px;
+    height: 14px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+    filter: invert(1) hue-rotate(180deg);
 }
 
 .kl-toolspace--left {
