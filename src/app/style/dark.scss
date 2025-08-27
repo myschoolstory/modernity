@@ -1,5 +1,5 @@
 :root {
-    --ui-bg-dark: #333;
+    --ui-bg-dark: #383838;
 }
 
 body.kl-theme-dark {
@@ -7,8 +7,8 @@ body.kl-theme-dark {
         0 0 / 8px;
 
     color-scheme: dark;
-    color: #ccc;
-    background: rgb(33, 33, 33);
+    color: #e5e5e5;
+    background: #2a2a2a;
 
     .kl-toolspace {
         background: var(--ui-bg-dark);
